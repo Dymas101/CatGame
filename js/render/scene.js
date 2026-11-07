@@ -82,8 +82,22 @@ function grassCap(ctx, x, y, w) {
   }
 }
 
-function drawGrassPlatform(ctx, p) {
+function drawGrassPlatform(ctx, p, low = false) {
   const { x, y, w, h } = p;
+
+  if (low) {
+    ctx.fillStyle = PALETTE.dirt;
+    rr(ctx, x, y + 8, w, h - 8, 12);
+    ctx.fill();
+    ctx.fillStyle = PALETTE.dirtDark;
+    ctx.fillRect(x + 4, y + Math.min(240, Math.max(18, h)), w - 8, Math.max(0, h - 240));
+    ctx.fillStyle = PALETTE.grass;
+    rr(ctx, x, y, w, 32, 10);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(x + 8, y + 3, w - 16, 4);
+    return;
+  }
 
   const dirt = ctx.createLinearGradient(0, y, 0, y + Math.min(200, h));
   dirt.addColorStop(0, PALETTE.dirtLight);
@@ -135,8 +149,21 @@ function drawGrassPlatform(ctx, p) {
   ctx.fillRect(x + w - 7, y + 30, 7, sideH);
 }
 
-function drawIcePlatform(ctx, p) {
+function drawIcePlatform(ctx, p, low = false) {
   const { x, y, w, h } = p;
+
+  if (low) {
+    ctx.fillStyle = '#cfedf7';
+    rr(ctx, x, y, w, h, 12);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    rr(ctx, x, y, w, 13, 6);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(120,200,220,0.45)';
+    ctx.fillRect(x + 3, y + 13, w - 6, 3);
+    return;
+  }
+
   const grad = ctx.createLinearGradient(0, y, 0, y + 180);
   grad.addColorStop(0, '#f4feff');
   grad.addColorStop(0.35, '#d9f5fc');
@@ -225,8 +252,16 @@ function drawIcePlatform(ctx, p) {
   ctx.fill();
 }
 
-function drawStonePlatform(ctx, p) {
+function drawStonePlatform(ctx, p, low = false) {
   const { x, y, w, h } = p;
+  if (low) {
+    ctx.fillStyle = PALETTE.stone;
+    rr(ctx, x, y, w, h, 10);
+    ctx.fill();
+    ctx.fillStyle = PALETTE.stoneLight;
+    ctx.fillRect(x + 4, y + 2, w - 8, 5);
+    return;
+  }
   const grad = ctx.createLinearGradient(0, y, 0, y + 120);
   grad.addColorStop(0, PALETTE.stoneLight);
   grad.addColorStop(0.4, PALETTE.stone);
@@ -261,8 +296,16 @@ function drawStonePlatform(ctx, p) {
   }
 }
 
-function drawWoodPlatform(ctx, p) {
+function drawWoodPlatform(ctx, p, low = false) {
   const { x, y, w, h } = p;
+  if (low) {
+    ctx.fillStyle = PALETTE.wood;
+    rr(ctx, x, y, w, h, 7);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,235,190,0.45)';
+    ctx.fillRect(x + 4, y + 2, w - 8, 3);
+    return;
+  }
   const grad = ctx.createLinearGradient(0, y, 0, y + h);
   grad.addColorStop(0, '#e0a96c');
   grad.addColorStop(1, PALETTE.woodDark);
@@ -292,11 +335,11 @@ function drawWoodPlatform(ctx, p) {
   }
 }
 
-function drawPlatform(ctx, p) {
-  if (p.type === 'ice') drawIcePlatform(ctx, p);
-  else if (p.type === 'stone') drawStonePlatform(ctx, p);
-  else if (p.type === 'wood') drawWoodPlatform(ctx, p);
-  else drawGrassPlatform(ctx, p);
+function drawPlatform(ctx, p, low = false) {
+  if (p.type === 'ice') drawIcePlatform(ctx, p, low);
+  else if (p.type === 'stone') drawStonePlatform(ctx, p, low);
+  else if (p.type === 'wood') drawWoodPlatform(ctx, p, low);
+  else drawGrassPlatform(ctx, p, low);
 }
 
 /* ------------------------------------------------------------------ */
@@ -506,7 +549,14 @@ function drawDecor(ctx, d) {
 /* Water                                                               */
 /* ------------------------------------------------------------------ */
 
-function drawWater(ctx, span, time) {
+function drawWater(ctx, span, time, low = false) {
+  if (low) {
+    ctx.fillStyle = PALETTE.water;
+    ctx.fillRect(span.x, span.y, span.w, span.h);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillRect(span.x, span.y, span.w, 4);
+    return;
+  }
   ctx.save();
   const grad = ctx.createLinearGradient(0, span.y - 10, 0, span.y + 220);
   grad.addColorStop(0, '#8fe0f5');
@@ -815,7 +865,7 @@ function drawMover(ctx, mover, time) {
   }
 }
 
-function drawFan(ctx, fan, time) {
+function drawFan(ctx, fan, time, low = false) {
   const cx = fan.x + fan.w / 2;
   const cy = fan.y + fan.h / 2;
   const r = Math.min(fan.w, fan.h) / 2;
@@ -835,7 +885,7 @@ function drawFan(ctx, fan, time) {
   ctx.fillRect(cx - r * 0.7, legTop + 20, r * 1.4, 8);
 
   // Wind cone.
-  if (fan.active) {
+  if (fan.active && !low) {
     const cone = ctx.createLinearGradient(fan.x - 240, 0, fan.x, 0);
     cone.addColorStop(0, 'rgba(220,248,255,0)');
     cone.addColorStop(1, 'rgba(220,248,255,0.22)');
@@ -933,7 +983,7 @@ function drawFan(ctx, fan, time) {
 /* Chest, key, door                                                    */
 /* ------------------------------------------------------------------ */
 
-function drawChest(ctx, chest, time) {
+function drawChest(ctx, chest, time, low = false) {
   const { x, y, w, h } = chest;
   const open = chest.state === 'closed' ? 0 : chest.state === 'opening' ? clamp(chest.timer / 0.45, 0, 1) : 1;
 
@@ -968,11 +1018,13 @@ function drawChest(ctx, chest, time) {
   }
 
   // Glow.
-  const glow = ctx.createRadialGradient(x + w / 2, y + h / 2, 10, x + w / 2, y + h / 2, 120);
-  glow.addColorStop(0, `rgba(255,220,110,${0.25 + open * 0.4})`);
-  glow.addColorStop(1, 'rgba(255,220,110,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(x - 90, y - 90, w + 180, h + 180);
+  if (!low) {
+    const glow = ctx.createRadialGradient(x + w / 2, y + h / 2, 10, x + w / 2, y + h / 2, 120);
+    glow.addColorStop(0, `rgba(255,220,110,${0.25 + open * 0.4})`);
+    glow.addColorStop(1, 'rgba(255,220,110,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 90, y - 90, w + 180, h + 180);
+  }
 
   // Base.
   const baseGrad = ctx.createLinearGradient(0, y + 30, 0, y + h);
@@ -1046,17 +1098,19 @@ function drawChest(ctx, chest, time) {
   }
 }
 
-function drawDoor(ctx, door, key, time) {
+function drawDoor(ctx, door, key, time, low = false) {
   const { x, y, w, h } = door;
   const cx = x + w / 2;
   const open = door.open;
 
   // Glow.
-  const glow = ctx.createRadialGradient(cx, y + h / 2, 10, cx, y + h / 2, 170);
-  glow.addColorStop(0, `rgba(255,225,130,${0.12 + open * 0.42})`);
-  glow.addColorStop(1, 'rgba(255,225,130,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(x - 130, y - 80, w + 260, h + 180);
+  if (!low) {
+    const glow = ctx.createRadialGradient(cx, y + h / 2, 10, cx, y + h / 2, 170);
+    glow.addColorStop(0, `rgba(255,225,130,${0.12 + open * 0.42})`);
+    glow.addColorStop(1, 'rgba(255,225,130,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 130, y - 80, w + 260, h + 180);
+  }
 
   // Arch.
   ctx.fillStyle = '#6d7885';
@@ -1203,13 +1257,26 @@ function drawDoor(ctx, door, key, time) {
 /* Collectibles and props                                              */
 /* ------------------------------------------------------------------ */
 
-function drawCoin(ctx, coin) {
+function drawCoin(ctx, coin, low = false) {
   if (coin.collected) return;
   const bob = Math.sin(coin.phase) * 3;
   const sx = 0.32 + 0.68 * Math.abs(Math.cos(coin.phase));
   ctx.save();
   ctx.translate(coin.x, coin.y + bob);
   ctx.scale(sx, 1);
+
+  if (low) {
+    ctx.fillStyle = '#b7791f';
+    ctx.beginPath();
+    ctx.arc(0, 1.5, 12.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd45c';
+    ctx.beginPath();
+    ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
 
   const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 22);
   glow.addColorStop(0, 'rgba(255,214,90,0.45)');
@@ -1398,7 +1465,7 @@ function drawSign(ctx, sign) {
 /* Players                                                             */
 /* ------------------------------------------------------------------ */
 
-function drawPlayer(ctx, level, player, time) {
+function drawPlayer(ctx, level, player, time, low = false) {
   const info = PLAYERS[player.index];
   drawCatShadow(ctx, player);
 
@@ -1416,7 +1483,7 @@ function drawPlayer(ctx, level, player, time) {
 
   if (player.carryingKey) {
     const key = level.key;
-    drawKey(ctx, player.cx, player.y - 16 + Math.sin(time * 4) * 3, 0.9, Math.sin(time * 3) * 0.2);
+    drawKey(ctx, player.cx, player.y - 16 + Math.sin(time * 4) * 3, 0.9, Math.sin(time * 3) * 0.2, !low);
     void key;
   }
 }
@@ -1425,22 +1492,24 @@ function drawPlayer(ctx, level, player, time) {
 /* Main scene                                                          */
 /* ------------------------------------------------------------------ */
 
-export function drawScene(ctx, level, camera, time, particles) {
+export function drawScene(ctx, level, camera, time, particles, low = false) {
   const view = camera.view;
 
-  for (const d of level.data.decor) {
-    if (!visible(view, d.x - 60, d.y - 120, 120, 130, 100)) continue;
-    drawDecor(ctx, d);
+  if (!low) {
+    for (const d of level.data.decor) {
+      if (!visible(view, d.x - 60, d.y - 120, 120, 130, 100)) continue;
+      drawDecor(ctx, d);
+    }
   }
 
   for (const span of level.data.waterSpans || []) {
     if (!visible(view, span.x, span.y - 20, span.w, span.h)) continue;
-    drawWater(ctx, span, time);
+    drawWater(ctx, span, time, low);
   }
 
   for (const p of level.platforms) {
     if (!visible(view, p.x, p.y, p.w, p.h)) continue;
-    drawPlatform(ctx, p);
+    drawPlatform(ctx, p, low);
   }
 
   for (const lever of level.levers) {
@@ -1465,7 +1534,7 @@ export function drawScene(ctx, level, camera, time, particles) {
 
   for (const fan of level.fans) {
     if (!visible(view, fan.x - 280, fan.y - 20, fan.w + 300, fan.h + 40)) continue;
-    drawFan(ctx, fan, time);
+    drawFan(ctx, fan, time, low);
   }
 
   for (const sign of level.signs) {
@@ -1476,7 +1545,7 @@ export function drawScene(ctx, level, camera, time, particles) {
   for (const coin of level.coins) {
     if (coin.collected) continue;
     if (!visible(view, coin.x - 25, coin.y - 25, 50, 50)) continue;
-    drawCoin(ctx, coin);
+    drawCoin(ctx, coin, low);
   }
 
   for (const sardine of level.sardines) {
@@ -1486,15 +1555,15 @@ export function drawScene(ctx, level, camera, time, particles) {
   }
 
   if (visible(view, level.chest.x - 60, level.chest.y - 80, level.chest.w + 120, level.chest.h + 100)) {
-    drawChest(ctx, level.chest, time);
+    drawChest(ctx, level.chest, time, low);
   }
 
   if (level.key.state === 'free' && visible(view, level.key.x - 30, level.key.y - 30, 60, 60)) {
-    drawKey(ctx, level.key.x + level.key.w / 2, level.key.y + level.key.h / 2 + Math.sin(time * 4) * 3, 1, Math.sin(time * 2.5) * 0.18);
+    drawKey(ctx, level.key.x + level.key.w / 2, level.key.y + level.key.h / 2 + Math.sin(time * 4) * 3, 1, Math.sin(time * 2.5) * 0.18, !low);
   }
 
   if (visible(view, level.door.x - 80, level.door.y - 120, level.door.w + 160, level.door.h + 160)) {
-    drawDoor(ctx, level.door, level.key, time);
+    drawDoor(ctx, level.door, level.key, time, low);
   }
 
   for (const box of level.boxes) {
@@ -1504,10 +1573,10 @@ export function drawScene(ctx, level, camera, time, particles) {
 
   for (const player of level.players) {
     if (!visible(view, player.x - 60, player.y - 80, player.w + 120, player.h + 100)) continue;
-    drawPlayer(ctx, level, player, time);
+    drawPlayer(ctx, level, player, time, low);
   }
 
-  if (particles) particles.draw(ctx);
+  if (particles) particles.draw(ctx, low);
 }
 
 export function drawForeground(ctx, camera, level, time) {

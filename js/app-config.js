@@ -5,6 +5,10 @@
 window.SARDIN_CONFIG = {
   controllerBaseUrl: '',
 
+  // 'auto' = deteksi TV / FPS rendah, 'low' = paksa mode performa,
+  // 'high' = paksa kualitas penuh.
+  performance: 'auto',
+
   // Optional PeerJS/WebRTC overrides. Empty object = PeerJS public cloud.
   // Example custom broker:
   // peer: { host: 'peer.example.com', port: 443, secure: true, path: '/' }

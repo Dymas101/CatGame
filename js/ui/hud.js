@@ -35,6 +35,7 @@ export class HUD {
       loading: document.querySelector('#loading'),
       banner: document.querySelector('#serverBanner'),
       bannerText: document.querySelector('#bannerText'),
+      perfBadge: document.querySelector('#perfBadge'),
       muteBtn: document.querySelector('#muteBtn'),
       winRank: document.querySelector('#winRank'),
       winScore: document.querySelector('#winScore'),
@@ -90,6 +91,12 @@ export class HUD {
 
   setBanner(text) {
     if (this.el.bannerText) this.el.bannerText.textContent = text;
+  }
+
+  setPerf(text, show = false) {
+    if (!this.el.perfBadge) return;
+    this.el.perfBadge.textContent = text;
+    this.el.perfBadge.classList.toggle('is-hidden', !show);
   }
 
   setQRVisible(visible) {

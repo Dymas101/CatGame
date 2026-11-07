@@ -222,8 +222,9 @@ export class ParticleSystem {
     }
   }
 
-  draw(ctx) {
+  draw(ctx, low = false) {
     for (const p of this.items) {
+      if (low && (p.type === 'dust' || p.type === 'wind' || p.type === 'twinkle' || p.type === 'note')) continue;
       const alpha = Math.max(0, Math.min(1, p.life / p.maxLife));
       ctx.save();
       ctx.globalAlpha = alpha;

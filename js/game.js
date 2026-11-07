@@ -12,15 +12,36 @@ import { drawScene } from './render/scene.js';
 
 const STEP = 1 / 120;
 
+function isTVBrowser() {
+  const ua = navigator.userAgent || '';
+  if (/Android TV|GoogleTV|Google TV|SMART-TV|SmartTV|Tizen|Web0S|webOS|BRAVIA|AFT[A-Z0-9]|MiTV|Hisense|Vizio|Philips|Roku|CrKey/i.test(ua)) return true;
+  // Android-tablet/TV builds often omit "Mobile" and have a large screen.
+  return /Android/i.test(ua) && !/Mobile/i.test(ua) && Math.max(screen.width, screen.height) >= 960;
+}
+
 export class Game {
   constructor() {
     this.canvas = document.querySelector('#game');
-    this.ctx = this.canvas.getContext('2d');
+    this.ctx = this.canvas.getContext('2d', { alpha: false });
     this.network = new PeerRoom();
     this.audio = new AudioEngine();
     this.particles = new ParticleSystem();
     this.input = new InputManager(this.network);
     this.hud = new HUD();
+
+    const params = new URLSearchParams(location.search);
+    const requestedQuality = params.get('quality') || window.SARDIN_CONFIG?.performance || 'auto';
+    this.forcedQuality = ['low', 'high'].includes(requestedQuality) ? requestedQuality : null;
+    this.debugPerf = params.get('debug') === '1';
+    this.lowFx = this.forcedQuality === 'low' || (this.forcedQuality !== 'high' && isTVBrowser());
+    this.lowScale = 0.8;
+    this.renderScale = this.lowFx ? this.lowScale : 1;
+    this.currentFps = 0;
+    this.fpsFrames = 0;
+    this.fpsElapsed = 0;
+    this.lowStreak = 0;
+    this.perfAdjusted = false;
+    document.documentElement.classList.toggle('low-fx', this.lowFx);
 
     this.level = new Level();
     this.camera = new Camera(this.level);
@@ -114,10 +135,62 @@ export class Game {
   }
 
   resize() {
-    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const baseDpr = Math.min(window.devicePixelRatio || 1, this.lowFx ? 1 : 1.5);
+    const dpr = Math.max(0.6, baseDpr * this.renderScale);
     this.dpr = dpr;
     this.canvas.width = Math.round(VIEW_W * dpr);
     this.canvas.height = Math.round(VIEW_H * dpr);
+  }
+
+  applyLowMode(reason) {
+    if (this.lowFx) return;
+    this.lowFx = true;
+    this.lowScale = 0.8;
+    this.renderScale = this.lowScale;
+    document.documentElement.classList.add('low-fx');
+    this.resize();
+    this.hud.setPerf(`MODE PERFORMA ${this.currentFps.toFixed(0)} FPS`, this.debugPerf);
+    if (this.state === 'playing') {
+      this.level.showHint('Mode performa aktif: resolusi diturunkan agar tetap lancar.', 4);
+    }
+    void reason;
+  }
+
+  updatePerf(rawDt) {
+    if (!(rawDt > 0) || rawDt > 0.5) return;
+    this.fpsFrames += 1;
+    this.fpsElapsed += rawDt;
+    if (this.fpsElapsed < 1) return;
+
+    const fps = this.fpsFrames / this.fpsElapsed;
+    this.currentFps = fps;
+    this.fpsFrames = 0;
+    this.fpsElapsed = 0;
+
+    if (this.debugPerf) {
+      this.hud.setPerf(
+        `${fps.toFixed(0)} FPS · ${this.lowFx ? 'LOW' : 'HIGH'} · ${this.canvas.width}×${this.canvas.height}`,
+        true
+      );
+    }
+
+    if (this.forcedQuality === 'high') return;
+
+    if (!this.lowFx) {
+      if (fps < 46) this.lowStreak += 1;
+      else this.lowStreak = 0;
+      if (this.lowStreak >= 2) this.applyLowMode('fps');
+      return;
+    }
+
+    // If even the low-resolution pass struggles, drop one more notch once.
+    if (!this.perfAdjusted && this.lowScale > 0.7 && fps < 36) {
+      this.perfAdjusted = true;
+      this.lowScale = 0.7;
+      this.renderScale = this.lowScale;
+      this.resize();
+      if (this.debugPerf) this.hud.setPerf(`${fps.toFixed(0)} FPS · LOW ${this.canvas.width}×${this.canvas.height}`, true);
+    }
   }
 
   prepareTitle() {
@@ -392,6 +465,7 @@ export class Game {
   loop(now) {
     const raw = (now - this.last) / 1000;
     this.last = now;
+    this.updatePerf(raw);
     const dt = Math.min(0.05, Math.max(0, raw));
     this.animTime += dt;
     this.tick += 1;
@@ -566,13 +640,13 @@ export class Game {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, VIEW_W, VIEW_H);
 
-    drawBackground(ctx, this.camera, this.level, this.animTime);
+    drawBackground(ctx, this.camera, this.level, this.animTime, this.lowFx);
 
     ctx.save();
     this.camera.apply(ctx);
-    drawScene(ctx, this.level, this.camera, this.animTime, this.particles);
+    drawScene(ctx, this.level, this.camera, this.animTime, this.particles, this.lowFx);
     ctx.restore();
 
-    drawVignette(ctx);
+    if (!this.lowFx) drawVignette(ctx);
   }
 }

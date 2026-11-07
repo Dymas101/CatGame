@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#172554" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Sardin Quest - Controller</title>
+  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="52" font-size="52">🐱</text></svg>' />
+  <link rel="stylesheet" href="./styles/controller.css" />
+</head>
+<body>
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="noise"></div>
+
+  <main id="app" class="app" data-slot="0">
+    <header class="top">
+      <div class="brand">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 20 7 8l11 7h12l11-7-3 12c3 3 5 8 5 13 0 9-8 16-19 16S5 42 5 33c0-5 2-10 5-13Z" fill="#fbbf24" stroke="#78350f" stroke-width="3" stroke-linejoin="round"/><circle cx="18" cy="31" r="2.6" fill="#3b1e0a"/><circle cx="30" cy="31" r="2.6" fill="#3b1e0a"/><path d="M21 37q3 3 6 0" fill="none" stroke="#3b1e0a" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <div><strong>SARDIN QUEST</strong><span>PHONE CONTROLLER</span></div>
+      </div>
+      <div class="top-actions">
+        <div class="status" id="status">
+          <span class="dot"></span>
+          <span id="statusText">Menghubungkan...</span>
+        </div>
+        <button id="fullscreenBtn" class="screen-btn" type="button" aria-label="Fullscreen dan landscape" aria-pressed="false" title="Fullscreen & landscape">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="identity">
+      <div class="avatar-wrap">
+        <svg class="avatar" viewBox="0 0 120 110" aria-hidden="true">
+          <ellipse id="tail" cx="98" cy="78" rx="16" ry="9" fill="var(--fur)" />
+          <path id="body" d="M60 12c6 0 10 4 12 8 4-3 9-4 13-1 4 3 5 9 3 14 7 7 12 18 12 30 0 20-18 33-40 33S20 83 20 63c0-12 5-23 12-30-2-5-1-11 3-14 4-3 9-2 13 1 2-4 6-8 12-8Z" fill="var(--fur)" stroke="#3b2416" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M38 24c-2-5 0-9 4-10 3 3 5 7 5 11Z" fill="var(--inner)" />
+          <path d="M82 24c2-5 0-9-4-10-3 3-5 7-5 11Z" fill="var(--inner)" />
+          <ellipse cx="60" cy="76" rx="25" ry="20" fill="var(--belly)" opacity="0.9"/>
+          <g class="face">
+            <ellipse cx="46" cy="56" rx="6" ry="7" fill="#2b170c"/>
+            <ellipse cx="74" cy="56" rx="6" ry="7" fill="#2b170c"/>
+            <circle cx="48" cy="53.5" r="2" fill="#fff"/>
+            <circle cx="76" cy="53.5" r="2" fill="#fff"/>
+            <ellipse cx="36" cy="66" rx="6" ry="3.5" fill="var(--blush)" opacity="0.85"/>
+            <ellipse cx="84" cy="66" rx="6" ry="3.5" fill="var(--blush)" opacity="0.85"/>
+            <path d="M57 64h6l-3 4Z" fill="#f472b6"/>
+            <path d="M60 68v3M60 71c-2 3-6 3-7 0M60 71c2 3 6 3 7 0" fill="none" stroke="#3b2416" stroke-width="2.2" stroke-linecap="round"/>
+          </g>
+        </svg>
+        <span class="avatar-glow"></span>
+      </div>
+      <div class="who">
+        <span class="eyebrow">KAMU MENGENDALIKAN</span>
+        <h1 id="playerName">Menunggu slot...</h1>
+        <p id="playerHint">Pastikan HP dan layar utama di jaringan yang sama.</p>
+      </div>
+      <button id="meowBtn" class="meow" type="button" aria-label="Mengeong">MEONG</button>
+    </section>
+
+    <section class="controls" id="controls">
+      <div class="dpad">
+        <button class="key" type="button" data-dir="left" aria-label="Jalan ke kiri">
+          <span class="arrow">◀</span>
+          <span class="key-label">KIRI</span>
+        </button>
+        <button class="key" type="button" data-dir="right" aria-label="Jalan ke kanan">
+          <span class="arrow">▶</span>
+          <span class="key-label">KANAN</span>
+        </button>
+      </div>
+      <button class="jump" type="button" id="jumpBtn" aria-label="Lompat">
+        <span class="jump-ring"></span>
+        <span class="jump-text">LOMPAT</span>
+        <span class="jump-sub">tap untuk melompat</span>
+      </button>
+    </section>
+
+    <footer class="bottom">
+      <span class="pill"><b id="slotLabel">-</b> <span id="slotName">belum tersambung</span></span>
+      <span class="room-chip">ROOM <b id="roomCodeController">—</b></span>
+      <span class="tip">Ketuk ⛶ untuk fullscreen · putar HP mendatar untuk kontrol lebih lega</span>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-card">
+      <div class="spinner" id="spinner"></div>
+      <h2 id="overlayTitle">Membuka room WebRTC...</h2>
+      <p id="overlayText">Pastikan layar utama masih terbuka dan HP terhubung ke internet. Room dibuat langsung oleh layar utama.</p>
+      <button id="retryBtn" class="retry" type="button" hidden>Coba lagi</button>
+    </div>
+  </div>
+
+  <script src="./js/app-config.js"></script>
+  <script src="./vendor/peerjs.min.js"></script>
+  <script type="module" src="./js/controller.js"></script>
+</body>
+</html>

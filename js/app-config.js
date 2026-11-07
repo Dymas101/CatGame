@@ -9,8 +9,14 @@ window.SARDIN_CONFIG = {
   // 'high' = paksa kualitas penuh.
   performance: 'auto',
 
-  // Optional PeerJS/WebRTC overrides. Empty object = PeerJS public cloud.
-  // Example custom broker:
-  // peer: { host: 'peer.example.com', port: 443, secure: true, path: '/' }
-  peer: {}
+  // Optional PeerJS/WebRTC overrides. Default includes reliable Google STUN servers.
+  peer: {
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
+      ]
+    }
+  }
 };

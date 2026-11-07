@@ -45,12 +45,14 @@ export class PeerRoom {
     this.retryAttempt = 0;
     this.idRetries = 0;
     this.expiryTimer = null;
+    this.openTimer = null;
 
     this.onRoom = null;
     this.onStatus = null;
     this.onPresence = null;
     this.onMeow = null;
     this.onError = null;
+    this.onPauseToggle = null;
   }
 
   freshInput() {
@@ -117,8 +119,16 @@ export class PeerRoom {
 
   peerOptions() {
     const config = window.SARDIN_CONFIG?.peer;
+    const defaultConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
+      ]
+    };
     return {
       debug: 1,
+      config: defaultConfig,
       ...(config && typeof config === 'object' ? config : {})
     };
   }
@@ -127,6 +137,8 @@ export class PeerRoom {
     if (this.destroyed) return;
     clearTimeout(this.retryTimer);
     this.retryTimer = null;
+    clearTimeout(this.openTimer);
+    this.openTimer = null;
 
     const PeerCtor = window.Peer;
     if (typeof PeerCtor !== 'function') {
@@ -149,8 +161,19 @@ export class PeerRoom {
     }
     this.peer = peer;
 
+    // PeerJS normally emits an error when signaling fails, but some blocked
+    // networks leave it hanging forever. Recover automatically.
+    this.openTimer = setTimeout(() => {
+      if (this.destroyed || this.peer !== peer || peer.open) return;
+      this.setStatus('offline');
+      this.onError?.('Broker PeerJS tidak merespons. Matikan VPN/WARP atau coba browser lain, lalu buat ulang room.');
+      this.replacePeer(peer, 1000);
+    }, 9000);
+
     peer.on('open', (id) => {
       if (this.destroyed || this.peer !== peer) return;
+      clearTimeout(this.openTimer);
+      this.openTimer = null;
       this.roomId = id;
       this.retryAttempt = 0;
       this.idRetries = 0;
@@ -185,6 +208,8 @@ export class PeerRoom {
 
     peer.on('close', () => {
       if (this.peer !== peer) return;
+      clearTimeout(this.openTimer);
+      this.openTimer = null;
       this.peer = null;
       if (this.destroyed) return;
       this.setStatus('offline');
@@ -201,16 +226,11 @@ export class PeerRoom {
     if (this.peer !== peer) return;
 
     if (type === 'unavailable-id') {
-      // Give a just-reloaded screen a moment to release its old PeerJS socket
-      // before falling back to a brand-new room code.
-      this.idRetries += 1;
-      if (this.idRetries <= 2) {
-        this.replacePeer(peer, 900);
-      } else {
-        this.clearRoomId();
-        this.idRetries = 0;
-        this.replacePeer(peer, 900);
-      }
+      // Clear stale room ID immediately and generate a brand-new room code
+      // so we don't get stuck waiting for a disconnected socket to timeout.
+      this.clearRoomId();
+      this.idRetries = 0;
+      this.replacePeer(peer, 300);
       return;
     }
     if (type === 'peer-unavailable') {
@@ -243,6 +263,8 @@ export class PeerRoom {
   }
 
   replacePeer(peer, delay = 1200) {
+    clearTimeout(this.openTimer);
+    this.openTimer = null;
     if (this.peer === peer) this.peer = null;
     try {
       peer?.destroy();
@@ -250,6 +272,25 @@ export class PeerRoom {
       /* ignore */
     }
     this.scheduleRetry(delay);
+  }
+
+  retryRoom() {
+    this.clearRoomId();
+    for (const conn of this.connections.keys()) {
+      try {
+        conn.close();
+      } catch {
+        /* ignore */
+      }
+    }
+    this.connections.clear();
+    this.table.reset();
+    for (const input of this.inputs) {
+      Object.assign(input, { left: false, right: false, jump: false, jumpQueued: false, connected: false, lastSeen: 0 });
+    }
+    this.onPresence?.(this.table.slotMap());
+    this.setStatus('connecting');
+    this.replacePeer(this.peer, 200);
   }
 
   scheduleRetry(delay) {
@@ -332,6 +373,11 @@ export class PeerRoom {
 
     if (msg.type === 'meow') {
       this.onMeow?.(state.slot - 1);
+      return;
+    }
+
+    if (msg.type === 'pause') {
+      this.onPauseToggle?.(state.slot - 1);
       return;
     }
 
@@ -436,6 +482,13 @@ export class PeerRoom {
     this.onPresence?.(this.table.slotMap());
   }
 
+  broadcastGameState(paused, phase = 'playing') {
+    const payload = { type: 'game-state', paused: Boolean(paused), phase };
+    for (const [conn, state] of this.connections) {
+      if (state.joined) this.send(conn, payload);
+    }
+  }
+
   send(conn, message) {
     if (!conn || !conn.open) return false;
     try {
@@ -463,6 +516,7 @@ export class PeerRoom {
   stop() {
     this.destroyed = true;
     clearTimeout(this.retryTimer);
+    clearTimeout(this.openTimer);
     clearInterval(this.expiryTimer);
     for (const conn of this.connections.keys()) {
       try {

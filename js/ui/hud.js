@@ -23,6 +23,7 @@ export class HUD {
       qrPanelUrl: document.querySelector('#qrPanelUrl'),
       roomStatus: document.querySelector('#roomStatus'),
       roomCode: document.querySelector('#roomCode'),
+      roomRetry: document.querySelector('#roomRetryBtn'),
       panelRoomCode: document.querySelector('#panelRoomCode'),
       qrPanel: document.querySelector('#qrPanel'),
       slot1: document.querySelector('#slot1'),
@@ -87,6 +88,7 @@ export class HUD {
     if (!this.el.roomStatus) return;
     this.el.roomStatus.textContent = text;
     this.el.roomStatus.className = `room-status ${mode}`;
+    if (this.el.roomRetry) this.el.roomRetry.hidden = mode !== 'bad';
   }
 
   setBanner(text) {

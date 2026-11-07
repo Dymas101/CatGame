@@ -82,6 +82,10 @@ export class Game {
     await Promise.race([fontReady, new Promise((r) => setTimeout(r, 1600))]);
 
     this.controllerBase = await this.resolveControllerBase();
+    if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+      const notice = document.querySelector('#localhostNotice');
+      if (notice) notice.style.display = 'block';
+    }
     this.hud.setRoomStatus('Menyiapkan room WebRTC...', 'wait');
     this.hud.setPresence(this.network.slots);
     this.hud.setServerStatus(this.network.status);
@@ -236,6 +240,12 @@ export class Game {
     document.querySelector('#muteBtn')?.addEventListener('click', () => this.toggleMute());
     document.querySelector('#qrBtn')?.addEventListener('click', () => this.toggleQR());
     document.querySelector('#qrClose')?.addEventListener('click', () => this.setQR(false));
+    document.querySelector('#roomRetryBtn')?.addEventListener('click', () => {
+      this.network.retryRoom();
+      this.hud.setRoomStatus('Membuat room baru...', 'wait');
+      this.hud.setControllerUrl('');
+      this.hud.setRoom('');
+    });
     document.querySelector('#resumeBtn')?.addEventListener('click', () => this.resume());
     document.querySelector('#restartPauseBtn')?.addEventListener('click', () => this.restart());
     document.querySelector('#replayBtn')?.addEventListener('click', () => this.restart());
@@ -275,11 +285,24 @@ export class Game {
           }
         }
       }
+      if (this.previousSlots) {
+        for (const slot of [1, 2]) {
+          const was = this.previousSlots[slot]?.connected;
+          if (slots[slot]?.connected && !was) {
+            this.network.broadcastGameState(this.state === 'paused', this.state);
+          }
+        }
+      }
       this.previousSlots = slots;
     };
 
     this.network.onMeow = (playerIndex) => {
       if (this.state === 'playing' || this.state === 'paused') this.level.meow(playerIndex);
+    };
+
+    this.network.onPauseToggle = () => {
+      if (this.state === 'playing') this.pause();
+      else if (this.state === 'paused') this.resume();
     };
 
     this.network.onStatus = (status) => {
@@ -345,6 +368,7 @@ export class Game {
     this.qrVisible = false;
     this.level.showHint('Kumpulkan sardin, lalu capai pintu emas bersama!', 6);
     this.hud.setHint(this.level.hint, true);
+    this.network.broadcastGameState(false, 'playing');
   }
 
   resetRun() {
@@ -374,6 +398,7 @@ export class Game {
     this.hud.fadeTo(true);
     setTimeout(() => this.hud.fadeTo(false), 260);
     this.level.showHint('Coba lagi! Kali ini kerja samanya lebih rapat.', 4);
+    this.network.broadcastGameState(false, 'playing');
   }
 
   toTitle() {
@@ -386,6 +411,7 @@ export class Game {
     this.hud.setQRVisible(false);
     this.qrVisible = false;
     this.hud.fadeTo(false);
+    this.network.broadcastGameState(false, 'title');
   }
 
   pause() {
@@ -396,6 +422,7 @@ export class Game {
     this.hud.setHint(this.level.hint, false);
     this.hud.setQRVisible(false);
     this.qrVisible = false;
+    this.network.broadcastGameState(true, 'paused');
   }
 
   resume() {
@@ -404,6 +431,7 @@ export class Game {
     this.acc = 0;
     this.last = performance.now();
     this.hud.showPause(false);
+    this.network.broadcastGameState(false, 'playing');
   }
 
   finish() {
@@ -433,6 +461,7 @@ export class Game {
     this.audio.sfx('win');
     this.particles.confetti(this.level.door.x + this.level.door.w / 2, this.level.door.y + 40, 90);
     this.camera.kick(0.6);
+    this.network.broadcastGameState(true, 'won');
   }
 
   toggleMute() {

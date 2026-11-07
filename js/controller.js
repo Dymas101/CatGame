@@ -2,24 +2,35 @@
 const $ = (sel) => document.querySelector(sel);
 
 const els = {
-  status: $('#status'),
-  statusText: $('#statusText'),
-  playerName: $('#playerName'),
-  playerHint: $('#playerHint'),
-  slotLabel: $('#slotLabel'),
-  slotName: $('#slotName'),
-  roomCode: $('#roomCodeController'),
+  lobbyView: $('#lobbyView'),
+  gameView: $('#gameView'),
+  lobbyStatus: $('#lobbyStatus'),
+  lobbyStatusText: $('#lobbyStatusText'),
+  lobbyPlayer: $('#lobbyPlayer'),
+  lobbyName: $('#lobbyName'),
+  lobbyHint: $('#lobbyHint'),
+  lobbyRoomCode: $('#lobbyRoomCode'),
+  lobbySlot: $('#lobbySlot'),
+  enterBtn: $('#enterBtn'),
+
+  pauseBtn: $('#pauseBtn'),
+  pauseLabel: $('#pauseLabel'),
+  exitBtn: $('#exitBtn'),
   fullscreenBtn: $('#fullscreenBtn'),
-  toast: $('#toast'),
+  gameDot: $('#gameDot'),
+  headerSlot: $('#headerSlot'),
+  headerRoom: $('#headerRoom'),
+  gamePlayerLabel: $('#gamePlayerLabel'),
+  gamePlayerName: $('#gamePlayerName'),
+  meowBtn: $('#meowBtn'),
+  jumpBtn: $('#jumpBtn'),
+
   overlay: $('#overlay'),
   overlayTitle: $('#overlayTitle'),
   overlayText: $('#overlayText'),
   spinner: $('#spinner'),
   retryBtn: $('#retryBtn'),
-  controls: $('#controls'),
-  meowBtn: $('#meowBtn'),
-  jumpBtn: $('#jumpBtn'),
-  app: $('#app')
+  toast: $('#toast')
 };
 
 const COLORS = {
@@ -58,9 +69,12 @@ let connected = false;
 let welcomeReceived = false;
 let slot = 0;
 let presence = null;
+let paused = false;
+let inGame = false;
 let reconnectAttempt = 0;
 let reconnectTimer = null;
 let joinTimer = null;
+let peerOpenTimer = null;
 let firstConnect = true;
 let duplicateTab = false;
 let channel = null;
@@ -75,15 +89,28 @@ window.__controllerState = input;
 /* ------------------------------------------------------------------ */
 
 function setStatus(text, mode = 'waiting') {
-  els.statusText.textContent = text;
-  els.status.className = `status ${mode}`;
+  if (els.lobbyStatusText) els.lobbyStatusText.textContent = text;
+  if (els.lobbyStatus) els.lobbyStatus.className = `status ${mode}`;
+  if (els.gameDot) els.gameDot.className = `dot ${mode}`;
+}
+
+function setRoomCodes() {
+  const code = roomId || '—';
+  if (els.lobbyRoomCode) els.lobbyRoomCode.textContent = code;
+  if (els.headerRoom) els.headerRoom.textContent = `ROOM ${code}`;
 }
 
 function setSlot(slotId, name, color) {
   slot = slotId;
-  els.app.dataset.slot = String(slotId || 0);
-  els.slotLabel.textContent = slotId ? `P${slotId}` : 'PENONTON';
-  els.slotName.textContent = slotId ? name : 'dua slot sudah terisi';
+  document.querySelector('#app')?.setAttribute('data-slot', String(slotId || 0));
+  const label = slotId ? `PLAYER ${slotId}` : 'PENONTON';
+  if (els.lobbyPlayer) els.lobbyPlayer.textContent = slotId ? `PLAYER ${slotId}` : 'PENONTON';
+  if (els.lobbyName) els.lobbyName.textContent = name || 'Menunggu slot...';
+  if (els.lobbySlot) els.lobbySlot.textContent = slotId ? `P${slotId}` : 'PENONTON';
+  if (els.gamePlayerLabel) els.gamePlayerLabel.textContent = label;
+  if (els.gamePlayerName) els.gamePlayerName.textContent = name || '—';
+  if (els.headerSlot) els.headerSlot.textContent = slotId ? `P${slotId}` : 'PENONTON';
+  if (els.enterBtn) els.enterBtn.disabled = !slotId;
 
   if (slotId && COLORS[slotId]) {
     const c = COLORS[slotId];
@@ -94,19 +121,14 @@ function setSlot(slotId, name, color) {
     root.setProperty('--blush', c.blush);
   }
   if (slotId) {
-    els.playerName.textContent = name;
-    els.playerHint.textContent = slotId === 1
-      ? 'Kucing oranye • tombol kiri & kanan di kiri, LOMPAT di kanan.'
-      : 'Kucing abu-abu • tombol kiri & kanan di kiri, LOMPAT di kanan.';
-    els.controls.classList.remove('disabled');
-  } else {
-    els.playerName.textContent = 'Penonton';
-    els.playerHint.textContent = 'Dua pemain sudah terhubung. Muat ulang halaman untuk mencoba lagi.';
-    els.controls.classList.add('disabled');
+    if (els.lobbyHint) els.lobbyHint.textContent = `Kamu akan mengendalikan ${name}. Tekan tombol masuk jika sudah siap.`;
+  } else if (els.lobbyHint) {
+    els.lobbyHint.textContent = 'Dua pemain sudah terhubung. Kamu masuk sebagai penonton.';
   }
 }
 
 function showOverlay(title, text, { retry = false, spin = false } = {}) {
+  if (!els.overlay) return;
   els.overlay.classList.remove('hidden');
   els.overlayTitle.textContent = title;
   els.overlayText.textContent = text;
@@ -115,7 +137,44 @@ function showOverlay(title, text, { retry = false, spin = false } = {}) {
 }
 
 function hideOverlay() {
-  els.overlay.classList.add('hidden');
+  els.overlay?.classList.add('hidden');
+}
+
+function showToast(text, ms = 2300) {
+  if (!els.toast) return;
+  els.toast.textContent = text;
+  els.toast.classList.add('show');
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => els.toast.classList.remove('show'), ms);
+}
+
+function showLobby(message) {
+  if (!els.lobbyView) return;
+  els.gameView?.classList.add('is-hidden');
+  els.lobbyView.classList.remove('is-hidden');
+  inGame = false;
+  releaseAll();
+  if (message && els.lobbyHint) els.lobbyHint.textContent = message;
+  if (slot) setStatus(`P${slot} terhubung ke layar utama`, 'ok');
+  hideOverlay();
+  setTimeout(() => els.enterBtn?.focus({ preventScroll: true }), 80);
+}
+
+function showGame() {
+  if (!slot) return;
+  els.lobbyView?.classList.add('is-hidden');
+  els.gameView?.classList.remove('is-hidden');
+  inGame = true;
+  hideOverlay();
+  setPaused(paused);
+  send({ type: 'input', ...input, seq: Date.now() % 100000 });
+  engageDevice();
+}
+
+function setPaused(value) {
+  paused = Boolean(value);
+  if (els.pauseLabel) els.pauseLabel.textContent = paused ? 'LANJUT' : 'PAUSE';
+  if (els.pauseBtn) els.pauseBtn.classList.toggle('paused', paused);
 }
 
 function updatePresenceText() {
@@ -124,13 +183,9 @@ function updatePresenceText() {
   const p2 = presence.players?.find((p) => p.slot === 2);
   const left = slot === 1 ? p2 : p1;
   if (!left) return;
-  if (left.connected) {
-    setStatus(`P${slot} & P${left.slot} siap`, 'ok');
-  } else if (left.pending) {
-    setStatus(`P${slot} siap · P${left.slot} ulang`, 'waiting');
-  } else {
-    setStatus(`P${slot} siap · tunggu P${left.slot}`, 'ok');
-  }
+  if (left.connected) setStatus(`P${slot} & P${left.slot} siap`, 'ok');
+  else if (left.pending) setStatus(`P${slot} siap · P${left.slot} ulang`, 'waiting');
+  else setStatus(`P${slot} siap · tunggu P${left.slot}`, 'ok');
 }
 
 /* ------------------------------------------------------------------ */
@@ -139,8 +194,16 @@ function updatePresenceText() {
 
 function peerOptions() {
   const config = window.SARDIN_CONFIG?.peer;
+  const defaultConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' }
+    ]
+  };
   return {
     debug: 1,
+    config: defaultConfig,
     ...(config && typeof config === 'object' ? config : {})
   };
 }
@@ -192,7 +255,7 @@ function startPeer() {
     return;
   }
 
-  setStatus(firstConnect ? 'Membuka room WebRTC...' : 'Menyambung ulang...', 'waiting');
+  setStatus(firstConnect ? 'Membuka koneksi WebRTC...' : 'Menyambung ulang...', 'waiting');
   if (!firstConnect) showOverlay('Menyambung ulang', 'Menghubungkan kembali ke layar utama...', { spin: true });
 
   let newPeer;
@@ -205,8 +268,21 @@ function startPeer() {
   }
   peer = newPeer;
 
+  clearTimeout(peerOpenTimer);
+  peerOpenTimer = setTimeout(() => {
+    if (peer !== newPeer || newPeer.open) return;
+    setStatus('Broker PeerJS tidak merespons', 'bad');
+    showOverlay(
+      'Broker PeerJS tidak merespons',
+      'Matikan VPN/Cloudflare WARP atau coba browser lain, lalu tekan Coba lagi.',
+      { retry: true, spin: false }
+    );
+  }, 10000);
+
   peer.on('open', () => {
     if (peer !== newPeer) return;
+    clearTimeout(peerOpenTimer);
+    peerOpenTimer = null;
     connectToRoom();
   });
 
@@ -227,6 +303,8 @@ function startPeer() {
 
   peer.on('close', () => {
     if (peer !== newPeer) return;
+    clearTimeout(peerOpenTimer);
+    peerOpenTimer = null;
     peer = null;
     connected = false;
     welcomeReceived = false;
@@ -255,7 +333,7 @@ function connectToRoom() {
       reliable: true,
       metadata: { token }
     });
-  } catch (error) {
+  } catch {
     setStatus('Gagal terhubung', 'bad');
     scheduleReconnect('connect-throw');
     return;
@@ -273,8 +351,13 @@ function connectToRoom() {
     joinTimer = setTimeout(() => {
       if (conn !== connection || welcomeReceived) return;
       try { connection.close(); } catch { /* ignore */ }
+      showOverlay(
+        'Koneksi membutuhkan waktu lebih lama',
+        'Pastikan HP dan Desktop PC berada di jaringan Wi-Fi yang sama. Jika Desktop PC diakses via localhost, buka via IP LAN PC.',
+        { retry: true, spin: true }
+      );
       scheduleReconnect('join-timeout');
-    }, 9000);
+    }, 6000);
   });
 
   connection.on('data', (raw) => {
@@ -322,12 +405,18 @@ function handleData(raw) {
     }
 
     setSlot(msg.slot, msg.name, msg.color);
+    setRoomCodes();
     token = msg.token || token;
     try { localStorage.setItem('sardin-controller-token', token); } catch { /* ignore */ }
-    hideOverlay();
     firstConnect = false;
     setStatus(`P${msg.slot} terhubung`, 'ok');
     if (presence) updatePresenceText();
+    if (inGame) {
+      hideOverlay();
+      setPaused(paused);
+    } else {
+      showLobby();
+    }
     if (navigator.vibrate) navigator.vibrate(30);
     send({ type: 'input', ...input, seq: Date.now() % 100000 });
     return;
@@ -336,6 +425,18 @@ function handleData(raw) {
   if (msg.type === 'presence') {
     presence = msg;
     if (slot) updatePresenceText();
+    return;
+  }
+
+  if (msg.type === 'game-state') {
+    setPaused(msg.paused);
+    if (msg.phase === 'won') {
+      if (els.pauseBtn) els.pauseBtn.disabled = true;
+      if (els.pauseLabel) els.pauseLabel.textContent = 'SELESAI';
+      showToast('Game selesai!');
+    } else if (els.pauseBtn) {
+      els.pauseBtn.disabled = false;
+    }
     return;
   }
 
@@ -348,6 +449,8 @@ function handlePeerError(error, sourcePeer) {
   if (peer !== sourcePeer) return;
   const type = error?.type || 'error';
   const message = error?.message || String(error);
+  clearTimeout(peerOpenTimer);
+  peerOpenTimer = null;
 
   if (type === 'peer-unavailable') {
     setStatus('Room tidak ditemukan', 'bad');
@@ -457,11 +560,10 @@ for (const button of document.querySelectorAll('.key')) {
   button.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
-const jumpBtn = els.jumpBtn;
-jumpBtn.addEventListener('pointerdown', (event) => {
+els.jumpBtn.addEventListener('pointerdown', (event) => {
   event.preventDefault();
-  jumpBtn.setPointerCapture?.(event.pointerId);
-  jumpBtn.classList.add('active');
+  els.jumpBtn.setPointerCapture?.(event.pointerId);
+  els.jumpBtn.classList.add('active');
   setInput('jump', true);
   send({ type: 'jump' });
   engageDevice();
@@ -469,13 +571,13 @@ jumpBtn.addEventListener('pointerdown', (event) => {
 });
 const jumpEnd = (event) => {
   event.preventDefault();
-  jumpBtn.classList.remove('active');
+  els.jumpBtn.classList.remove('active');
   setInput('jump', false);
 };
-jumpBtn.addEventListener('pointerup', jumpEnd);
-jumpBtn.addEventListener('pointercancel', jumpEnd);
-jumpBtn.addEventListener('lostpointercapture', jumpEnd);
-jumpBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+els.jumpBtn.addEventListener('pointerup', jumpEnd);
+els.jumpBtn.addEventListener('pointercancel', jumpEnd);
+els.jumpBtn.addEventListener('lostpointercapture', jumpEnd);
+els.jumpBtn.addEventListener('contextmenu', (e) => e.preventDefault());
 
 els.meowBtn.addEventListener('pointerdown', (event) => {
   event.preventDefault();
@@ -485,6 +587,15 @@ els.meowBtn.addEventListener('pointerdown', (event) => {
   if (navigator.vibrate) navigator.vibrate([8, 24, 8]);
 });
 
+els.pauseBtn?.addEventListener('click', () => {
+  send({ type: 'pause' });
+  if (navigator.vibrate) navigator.vibrate(12);
+});
+els.exitBtn?.addEventListener('click', () => {
+  showLobby('Kamu keluar ke lobby. Tekan MASUK GAME untuk kembali.');
+});
+els.enterBtn?.addEventListener('click', () => showGame());
+
 /* ------------------------------------------------------------------ */
 /* Fullscreen & orientation                                            */
 /* ------------------------------------------------------------------ */
@@ -492,14 +603,6 @@ els.meowBtn.addEventListener('pointerdown', (event) => {
 const docEl = document.documentElement;
 let toastTimer = null;
 let fullscreenBusy = false;
-
-function showToast(text, ms = 2400) {
-  if (!els.toast) return;
-  els.toast.textContent = text;
-  els.toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => els.toast.classList.remove('show'), ms);
-}
 
 function isFullscreen() {
   return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
@@ -542,17 +645,11 @@ async function exitFullscreen() {
 async function lockLandscape() {
   try {
     if (screen.orientation?.lock) await screen.orientation.lock('landscape');
-  } catch {
-    /* iOS / desktop / unsupported: user can rotate manually */
-  }
+  } catch { /* iOS / desktop / unsupported */ }
 }
 
 function unlockOrientation() {
-  try {
-    screen.orientation?.unlock?.();
-  } catch {
-    /* ignore */
-  }
+  try { screen.orientation?.unlock?.(); } catch { /* ignore */ }
 }
 
 async function enterFullscreen({ silent = false } = {}) {
@@ -592,13 +689,11 @@ async function toggleFullscreen() {
   }
 }
 
-if (els.fullscreenBtn) {
-  els.fullscreenBtn.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    toggleFullscreen();
-  });
-}
+els.fullscreenBtn?.addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  toggleFullscreen();
+});
 
 for (const eventName of ['fullscreenchange', 'webkitfullscreenchange']) {
   document.addEventListener(eventName, () => {
@@ -696,13 +791,14 @@ setInterval(() => {
   if (conn && conn.open) send({ type: 'ping', t: Date.now() });
 }, 4000);
 
-if (els.roomCode) els.roomCode.textContent = roomId || '—';
+setRoomCodes();
 setSlot(0, '', '');
 guardDuplicateTabs();
 if (!roomId) {
   setStatus('Room tidak ditemukan', 'bad');
   showOverlay('Room tidak ditemukan', 'Scan QR dari layar utama, lalu buka halaman kontroler yang muncul.', { retry: false });
 } else {
+  showOverlay('Membuka room WebRTC...', 'Menghubungkan ke layar utama...', { spin: true });
   setTimeout(() => {
     if (!duplicateTab) startPeer();
   }, 260);

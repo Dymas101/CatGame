@@ -94,6 +94,7 @@
       <aside class="connect-card" id="connectCard">
         <div class="card-top"><span class="live-dot"></span> HUBUNGKAN HP KAMU</div>
         <p class="room-status wait" id="roomStatus">Menyiapkan room WebRTC...</p>
+        <button id="roomRetryBtn" class="room-retry" type="button" hidden>Buat ulang room</button>
         <div class="qr-wrap"><div id="qrCanvas" class="qr-canvas"><div class="qr-loading">Menyiapkan QR...</div></div></div>
         <h2>Scan untuk Hubungkan HP Kamu!</h2>
         <p class="qr-url" id="controllerUrl">Menyiapkan room WebRTC...</p>
@@ -113,6 +114,7 @@
           </div>
         </div>
         <p class="fine">HP dan PC harus di Wi-Fi yang sama · tanpa install aplikasi</p>
+        <p class="fine" id="localhostNotice" style="display:none; color:#fde047; margin-top:5px; font-weight:700;">💡 <b>Desktop Localhost:</b> Buka game pakai IP LAN PC (contoh: 192.168.x.x) agar QR dapat diakses HP.</p>
       </aside>
 
       <div class="title-footer">

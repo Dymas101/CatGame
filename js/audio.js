@@ -81,9 +81,9 @@ export class AudioEngine {
   startMusic() {
     if (this.musicPlaying || !this.ctx) return;
     this.musicPlaying = true;
-    this.nextStepTime = this.ctx.currentTime + 0.12;
+    this.nextStepTime = this.ctx.currentTime + 0.15;
     this.step = 0;
-    this.timer = setInterval(() => this.schedule(), 40);
+    this.timer = setInterval(() => this.schedule(), 80);
   }
 
   stopMusic() {
@@ -99,7 +99,8 @@ export class AudioEngine {
       return;
     }
     const stepDur = 60 / BPM / 4;
-    while (this.nextStepTime < this.ctx.currentTime + 0.28) {
+    // Schedule well ahead so a busy TV main thread cannot make the music skip.
+    while (this.nextStepTime < this.ctx.currentTime + 1.4) {
       this.playStep(this.step, this.nextStepTime);
       this.nextStepTime += stepDur;
       this.step = (this.step + 1) % TOTAL_STEPS;

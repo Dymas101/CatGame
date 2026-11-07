@@ -23,15 +23,26 @@ export class Camera {
 
   update(dt, players, level) {
     this.time += dt;
-    const p1 = players[0];
-    const p2 = players[1];
-    const midX = (p1.cx + p2.cx) / 2;
-    const midY = (p1.y + p2.bottom) / 2;
+    if (!players || players.length === 0) return;
 
-    const minX = Math.min(p1.x, p2.x);
-    const maxX = Math.max(p1.x + p1.w, p2.x + p2.w);
-    const minY = Math.min(p1.y, p2.y);
-    const maxY = Math.max(p1.bottom, p2.bottom);
+    let sumX = 0;
+    let sumY = 0;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const p of players) {
+      sumX += p.cx;
+      sumY += (p.y + p.bottom) / 2;
+      minX = Math.min(minX, p.x);
+      maxX = Math.max(maxX, p.x + p.w);
+      minY = Math.min(minY, p.y);
+      maxY = Math.max(maxY, p.bottom);
+    }
+
+    const midX = sumX / players.length;
+    const midY = sumY / players.length;
 
     const spanX = maxX - minX + 520;
     const spanY = maxY - minY + 380;

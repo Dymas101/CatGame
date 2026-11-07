@@ -36,7 +36,7 @@ export class PeerRoom {
   constructor() {
     this.table = new SlotTable(12000);
     this.connections = new Map();
-    this.inputs = [this.freshInput(), this.freshInput()];
+    this.inputs = [this.freshInput(), this.freshInput(), this.freshInput(), this.freshInput()];
     this.roomId = '';
     this.status = 'connecting';
     this.peer = null;

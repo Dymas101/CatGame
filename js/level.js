@@ -24,7 +24,9 @@ export class Level {
     this.toast = null;
     this.lastCheckpointFlash = 0;
 
-    this.players = [new Player(0, LEVEL.spawn.p1), new Player(1, LEVEL.spawn.p2)];
+    this.players = [
+      new Player(0, LEVEL.spawn.p1)
+    ];
 
     this.platforms = LEVEL.platforms.map((p, i) => ({
       ...p,
@@ -146,7 +148,7 @@ export class Level {
   }
 
   get maxX() {
-    return Math.max(this.players[0].x, this.players[1].x);
+    return Math.max(...this.players.map((p) => p.x));
   }
 
   get objective() {
@@ -162,11 +164,35 @@ export class Level {
     return 'Kumpulkan sardin & koin, lalu menuju pintu keluar';
   }
 
-  update(dt, inputs) {
+  update(dt, inputs, networkSlots) {
     dt = Math.min(dt, 1 / 30);
     this.time += dt;
     this.hintTimer = Math.max(0, this.hintTimer - dt);
     this.shake = Math.max(0, this.shake - dt * 2.2);
+
+    if (inputs) {
+      for (let slotId = 2; slotId <= 4; slotId++) {
+        const playerIndex = slotId - 1;
+        const isConnected = networkSlots && networkSlots[slotId]?.connected;
+        const playerInput = inputs[playerIndex];
+        const hasInput = playerInput && (playerInput.left || playerInput.right || playerInput.jump || playerInput.jumpPressed);
+
+        const existingPlayer = this.players.find((p) => p.index === playerIndex);
+        if ((isConnected || hasInput) && !existingPlayer) {
+          const p1 = this.players[0];
+          const spawnX = p1 ? p1.cx + (playerIndex * 48 - 24) : 180 + playerIndex * 50;
+          const spawnY = p1 ? p1.y : 568;
+          const newPlayer = new Player(playerIndex, { x: spawnX, y: spawnY });
+          newPlayer.onGround = true;
+          newPlayer.invuln = 1.2;
+          this.players.push(newPlayer);
+          this.players.sort((a, b) => a.index - b.index);
+          const name = playerIndex === 1 ? 'Kucing Abu-abu (P2)' : playerIndex === 2 ? 'Kucing Putih (P3)' : 'Kucing Hitam (P4)';
+          this.showHint(`${name} bergabung ke permainan!`, 4);
+          this.emit('checkpoint', { x: newPlayer.cx, y: newPlayer.y });
+        }
+      }
+    }
 
     for (const sign of this.signs) sign.cooldown = Math.max(0, sign.cooldown - dt);
     for (const lever of this.levers) {
@@ -191,8 +217,8 @@ export class Level {
     this.updatePlates(dt);
     this.updatePickups(dt);
     this.updateChestKey(dt);
-    this.updateDoor(dt);
-    this.updateCheckpoints();
+    this.updateDoor(dt, networkSlots);
+    this.updateCheckpoints(networkSlots);
     this.updateSigns(dt);
     this.updateFans(dt);
   }
@@ -438,7 +464,7 @@ export class Level {
     this.key.holder = null;
   }
 
-  updateDoor(dt) {
+  updateDoor(dt, networkSlots) {
     const door = this.door;
     door.open = damp(door.open, door.inserted ? 1 : 0, 7, dt);
 
@@ -455,15 +481,23 @@ export class Level {
           this.score += 150;
           this.emit('door', { x: door.x + door.w / 2, y: door.y + 70 });
           this.shake = Math.max(this.shake, 0.35);
-          this.showHint('Kunci masuk! Sekarang kedua kucing harus berdiri di pintu.', 6);
+          this.showHint('Kunci masuk! Sekarang semua kucing aktif harus berdiri di pintu.', 6);
           break;
         }
       }
     }
 
     if (door.inserted && !this.finished) {
-      const inside = this.players.filter((p) => rectsOverlap(p.rect, door.zone));
-      if (inside.length === 2) {
+      const activePlayers = this.players.filter((p) => {
+        if (p.index === 0) return true; // P1 always active
+        if (networkSlots && networkSlots[p.slot]) {
+          return networkSlots[p.slot].connected;
+        }
+        return p.index === 1; // Default P2 active locally
+      });
+
+      const inside = activePlayers.filter((p) => rectsOverlap(p.rect, door.zone));
+      if (inside.length === activePlayers.length) {
         this.winTimer += dt;
         if (this.winTimer > 0.55) {
           this.finished = true;
@@ -478,9 +512,8 @@ export class Level {
         }
       } else {
         this.winTimer = 0;
-        if (inside.length === 1) {
-          const other = inside[0] === this.players[0] ? 'P2' : 'P1';
-          if (this.hintTimer <= 0) this.showHint(`Tunggu ${other}! Kedua kucing harus masuk pintu.`, 3);
+        if (inside.length > 0 && inside.length < activePlayers.length) {
+          if (this.hintTimer <= 0) this.showHint(`Semua kucing aktif harus masuk pintu (${inside.length}/${activePlayers.length})!`, 3);
         }
       }
     }
@@ -489,10 +522,15 @@ export class Level {
   updateCheckpoints() {
     for (let i = this.checkpoints.length - 1; i > this.checkpointIndex; i--) {
       const cp = this.checkpoints[i];
-      if (this.players.some((p) => p.x > cp.x && p.y + p.h < this.waterY - 20)) {
+      if (this.players.some((p) => p.cx >= cp.x && p.y + p.h < this.waterY - 20)) {
         this.checkpointIndex = i;
-        this.players[0].setSpawn(cp.spawn[0]);
-        this.players[1].setSpawn(cp.spawn[1]);
+        for (let idx = 0; idx < this.players.length; idx++) {
+          const p = this.players[idx];
+          if (p) {
+            const spawnIndex = Math.min(p.index, cp.spawn.length - 1);
+            p.setSpawn(cp.spawn[spawnIndex] || cp.spawn[0]);
+          }
+        }
         this.showHint('Checkpoint! Kalau jatuh, kalian kembali ke sini.', 3.5);
         this.emit('checkpoint', { x: cp.x, y: 560 });
         break;
@@ -555,7 +593,8 @@ export class Level {
 
   respawnPlayer(player) {
     const cp = this.checkpoints[this.checkpointIndex];
-    const spawn = cp.spawn[player.index];
+    const spawnIndex = Math.min(player.index, cp.spawn.length - 1);
+    const spawn = cp.spawn[spawnIndex] || player.spawn;
     this.emit('splash', {
       x: player.cx,
       y: Math.min(this.waterY, player.y + player.h),

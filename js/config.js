@@ -49,6 +49,34 @@ export const PLAYERS = [
     blush: '#f0a8b8',
     stripe: '#6b7688',
     key: '#9ad7ff'
+  },
+  {
+    id: 2,
+    slot: 3,
+    name: 'Kucing Putih',
+    short: 'P3',
+    fur: '#f1f5f9',
+    furDark: '#cbd5e1',
+    furLight: '#ffffff',
+    belly: '#ffffff',
+    inner: '#e2e8f0',
+    blush: '#fb7185',
+    stripe: '#94a3b8',
+    key: '#fb7185'
+  },
+  {
+    id: 3,
+    slot: 4,
+    name: 'Kucing Hitam',
+    short: 'P4',
+    fur: '#334155',
+    furDark: '#1e293b',
+    furLight: '#475569',
+    belly: '#64748b',
+    inner: '#475569',
+    blush: '#c084fc',
+    stripe: '#0f172a',
+    key: '#c084fc'
   }
 ];
 

@@ -1,6 +1,7 @@
 // Game orchestrator: states, fixed-step simulation, rendering and juice.
 import { VIEW_W, VIEW_H } from './config.js';
 import { Level } from './level.js';
+import { Player } from './player.js';
 import { Camera } from './camera.js';
 import { ParticleSystem } from './particles.js';
 import { AudioEngine } from './audio.js';
@@ -199,11 +200,14 @@ export class Game {
 
   prepareTitle() {
     this.level = new Level();
+    if (this.level.players.length < 2) {
+      this.level.players.push(new Player(1, { x: 8420, y: 568 }));
+    }
     const p1 = this.level.players[0];
     const p2 = this.level.players[1];
     // A photogenic spot in the open meadow for the title backdrop.
-    p1.reset({ x: 8320, y: 568 });
-    p2.reset({ x: 8420, y: 568 });
+    if (p1) p1.reset({ x: 8320, y: 568 });
+    if (p2) p2.reset({ x: 8420, y: 568 });
     for (const p of this.level.players) {
       p.onGround = true;
       p.groundType = 'grass';
@@ -212,7 +216,7 @@ export class Game {
       p.carryingKey = false;
       p.invuln = 0;
     }
-    this.level.players[1].facing = -1;
+    if (p2) p2.facing = -1;
     // Keep the title backdrop clean: the exit arch belongs to the gameplay reveal.
     this.level.door.x = -4000;
     this.level.door.zone = { x: -4000, y: this.level.door.y, w: this.level.door.w, h: this.level.door.h };
@@ -516,7 +520,7 @@ export class Game {
   }
 
   updatePlaying(dt) {
-    const inputs = [this.input.poll(0), this.input.poll(1)];
+    const inputs = [this.input.poll(0), this.input.poll(1), this.input.poll(2), this.input.poll(3)];
     this.acc += dt;
     let steps = 0;
     while (this.acc >= STEP && steps < 8) {
@@ -532,9 +536,21 @@ export class Game {
           right: inputs[1].right,
           jump: inputs[1].jump,
           jumpPressed: steps === 0 ? inputs[1].jumpPressed : false
+        },
+        {
+          left: inputs[2].left,
+          right: inputs[2].right,
+          jump: inputs[2].jump,
+          jumpPressed: steps === 0 ? inputs[2].jumpPressed : false
+        },
+        {
+          left: inputs[3].left,
+          right: inputs[3].right,
+          jump: inputs[3].jump,
+          jumpPressed: steps === 0 ? inputs[3].jumpPressed : false
         }
       ];
-      this.level.update(STEP, stepInputs);
+      this.level.update(STEP, stepInputs, this.network.slots);
       this.acc -= STEP;
       steps += 1;
       if (this.level.finished) break;

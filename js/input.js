@@ -1,14 +1,16 @@
 // Keyboard fallback + merging with phone input.
 const KEYMAP = [
   { left: ['KeyA'], right: ['KeyD'], jump: ['KeyW', 'Space'] },
-  { left: ['ArrowLeft'], right: ['ArrowRight'], jump: ['ArrowUp'] }
+  { left: ['ArrowLeft'], right: ['ArrowRight'], jump: ['ArrowUp'] },
+  { left: ['KeyJ'], right: ['KeyL'], jump: ['KeyI'] },
+  { left: ['Numpad4'], right: ['Numpad6'], jump: ['Numpad8'] }
 ];
 
 export class InputManager {
   constructor(network) {
     this.network = network;
     this.keys = new Set();
-    this.jumpQueued = [false, false];
+    this.jumpQueued = [false, false, false, false];
     this.onShortcut = null;
     this.enabled = true;
 
@@ -28,7 +30,7 @@ export class InputManager {
     if (event.repeat) return;
     this.keys.add(code);
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 4; i++) {
       if (KEYMAP[i].jump.includes(code)) this.jumpQueued[i] = true;
     }
     if (this.onShortcut) this.onShortcut(code, event);
@@ -40,7 +42,7 @@ export class InputManager {
 
   clear() {
     this.keys.clear();
-    this.jumpQueued = [false, false];
+    this.jumpQueued = [false, false, false, false];
     for (const input of this.network.inputs) input.jumpQueued = false;
   }
 

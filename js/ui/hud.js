@@ -17,8 +17,12 @@ export class HUD {
       hintText: document.querySelector('#hintText'),
       chipP1: document.querySelector('#chipP1'),
       chipP2: document.querySelector('#chipP2'),
+      chipP3: document.querySelector('#chipP3'),
+      chipP4: document.querySelector('#chipP4'),
       chipP1State: document.querySelector('#chipP1State'),
       chipP2State: document.querySelector('#chipP2State'),
+      chipP3State: document.querySelector('#chipP3State'),
+      chipP4State: document.querySelector('#chipP4State'),
       controllerUrl: document.querySelector('#controllerUrl'),
       qrPanelUrl: document.querySelector('#qrPanelUrl'),
       roomStatus: document.querySelector('#roomStatus'),
@@ -28,8 +32,12 @@ export class HUD {
       qrPanel: document.querySelector('#qrPanel'),
       slot1: document.querySelector('#slot1'),
       slot2: document.querySelector('#slot2'),
+      slot3: document.querySelector('#slot3'),
+      slot4: document.querySelector('#slot4'),
       panelSlot1: document.querySelector('#panelSlot1'),
       panelSlot2: document.querySelector('#panelSlot2'),
+      panelSlot3: document.querySelector('#panelSlot3'),
+      panelSlot4: document.querySelector('#panelSlot4'),
       pause: document.querySelector('#pauseScreen'),
       win: document.querySelector('#winScreen'),
       fade: document.querySelector('#fade'),
@@ -163,11 +171,17 @@ export class HUD {
   setPresence(slots) {
     this.applySlot(this.el.slot1, slots[1], 'Menunggu HP');
     this.applySlot(this.el.slot2, slots[2], 'Menunggu HP');
+    this.applySlot(this.el.slot3, slots[3], 'Menunggu HP');
+    this.applySlot(this.el.slot4, slots[4], 'Menunggu HP');
     this.applySlot(this.el.panelSlot1, slots[1], 'Menunggu');
     this.applySlot(this.el.panelSlot2, slots[2], 'Menunggu');
+    this.applySlot(this.el.panelSlot3, slots[3], 'Menunggu');
+    this.applySlot(this.el.panelSlot4, slots[4], 'Menunggu');
 
     this.applyChip(this.el.chipP1, this.el.chipP1State, slots[1]);
     this.applyChip(this.el.chipP2, this.el.chipP2State, slots[2]);
+    this.applyChip(this.el.chipP3, this.el.chipP3State, slots[3]);
+    this.applyChip(this.el.chipP4, this.el.chipP4State, slots[4]);
   }
 
   applySlot(row, slot, waitingText) {

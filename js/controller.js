@@ -35,7 +35,9 @@ const els = {
 
 const COLORS = {
   1: { fur: '#f59e42', inner: '#ffd0a8', belly: '#ffe7cf', blush: '#ff8f8f' },
-  2: { fur: '#a8b3c4', inner: '#dbe3ee', belly: '#edf2f8', blush: '#f0a8b8' }
+  2: { fur: '#a8b3c4', inner: '#dbe3ee', belly: '#edf2f8', blush: '#f0a8b8' },
+  3: { fur: '#f1f5f9', inner: '#e2e8f0', belly: '#ffffff', blush: '#fb7185' },
+  4: { fur: '#334155', inner: '#475569', belly: '#64748b', blush: '#c084fc' }
 };
 
 function makeToken() {

@@ -2,14 +2,16 @@
 // in Node. Each slot keeps its token during a short reconnection grace period.
 import { PLAYERS } from './config.js';
 
-const SLOT_IDS = [1, 2];
+const SLOT_IDS = [1, 2, 3, 4];
 
 export class SlotTable {
   constructor(graceMs = 12000) {
     this.graceMs = graceMs;
     this.slots = {
       1: { token: null, connected: false, pendingUntil: 0 },
-      2: { token: null, connected: false, pendingUntil: 0 }
+      2: { token: null, connected: false, pendingUntil: 0 },
+      3: { token: null, connected: false, pendingUntil: 0 },
+      4: { token: null, connected: false, pendingUntil: 0 }
     };
   }
 
@@ -104,7 +106,9 @@ export class SlotTable {
   reset() {
     this.slots = {
       1: { token: null, connected: false, pendingUntil: 0 },
-      2: { token: null, connected: false, pendingUntil: 0 }
+      2: { token: null, connected: false, pendingUntil: 0 },
+      3: { token: null, connected: false, pendingUntil: 0 },
+      4: { token: null, connected: false, pendingUntil: 0 }
     };
   }
 }

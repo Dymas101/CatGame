@@ -54,6 +54,16 @@
             <span class="chip-name">P2</span>
             <span class="chip-state" id="chipP2State">Keyboard</span>
           </div>
+          <div class="player-chip" id="chipP3">
+            <span class="chip-dot"></span>
+            <span class="chip-name">P3</span>
+            <span class="chip-state" id="chipP3State">Keyboard</span>
+          </div>
+          <div class="player-chip" id="chipP4">
+            <span class="chip-dot"></span>
+            <span class="chip-name">P4</span>
+            <span class="chip-state" id="chipP4State">Keyboard</span>
+          </div>
           <button class="icon-btn" id="qrBtn" type="button" title="Tampilkan QR koneksi">QR</button>
           <button class="icon-btn" id="muteBtn" type="button" title="Suara (M)">♪</button>
           <span id="perfBadge" class="perf-badge is-hidden"></span>
@@ -61,15 +71,15 @@
       </div>
 
       <div class="hint" id="hint"><span id="hintText"></span></div>
-      <div class="keys-tip">P1 <b>A</b> <b>D</b> <b>W</b> · P2 <b>←</b> <b>→</b> <b>↑</b> · <b>R</b> ulang · <b>Esc</b> jeda · <b>M</b> suara</div>
+      <div class="keys-tip">P1 <b>A D W</b> · P2 <b>← → ↑</b> · P3 <b>J L I</b> · P4 <b>4 6 8</b> · <b>R</b> ulang · <b>Esc</b> jeda · <b>M</b> suara</div>
     </section>
 
     <!-- ================= TITLE ================= -->
     <section id="titleScreen" class="screen title">
       <div class="title-copy">
-        <div class="eyebrow"><span></span> CO-OP PLATFORMER · 2 PEMAIN <span></span></div>
+        <div class="eyebrow"><span></span> CO-OP PLATFORMER · 1-4 PEMAIN <span></span></div>
         <h1 class="logo"><span class="logo-sardin">SARDIN</span><span class="logo-quest">QUEST</span></h1>
-        <p class="tagline">Dua kucing bulat, satu layar, dan sebuah kunci emas.<br />Bekerja samalah untuk keluar dari Lembah Sardin!</p>
+        <p class="tagline">Hingga 4 kucing bulat, satu layar, dan sebuah kunci emas.<br />Bekerja samalah untuk keluar dari Lembah Sardin!</p>
 
         <div class="start-row">
           <button id="startBtn" class="primary" type="button">
@@ -80,14 +90,14 @@
         </div>
 
         <div class="feature-chips">
-          <span class="chip"><i>👥</i> 2 pemain 1 layar</span>
+          <span class="chip"><i>👥</i> 1-4 pemain</span>
           <span class="chip"><i>📱</i> HP jadi gamepad</span>
           <span class="chip"><i>🧩</i> puzzle co-op</span>
           <span class="chip"><i>🐟</i> 8 sardin tersembunyi</span>
         </div>
 
         <div class="keyboard-note">
-          <b>Tanpa HP?</b> Mainkan berdua di keyboard: P1 <kbd>A</kbd><kbd>D</kbd><kbd>W</kbd> · P2 <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd>
+          <b>Tanpa HP?</b> P1 <kbd>A</kbd><kbd>D</kbd><kbd>W</kbd> · P2 <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd> · P3 <kbd>J</kbd><kbd>L</kbd><kbd>I</kbd> · P4 <kbd>4</kbd><kbd>6</kbd><kbd>8</kbd>
         </div>
       </div>
 
@@ -112,6 +122,18 @@
             <span class="slot-name">Kucing Abu-abu</span>
             <em class="slot-state">Menunggu HP</em>
           </div>
+          <div class="slot-row" id="slot3">
+            <span class="slot-dot p3"></span>
+            <b>P3</b>
+            <span class="slot-name">Kucing Putih</span>
+            <em class="slot-state">Menunggu HP</em>
+          </div>
+          <div class="slot-row" id="slot4">
+            <span class="slot-dot p4"></span>
+            <b>P4</b>
+            <span class="slot-name">Kucing Hitam</span>
+            <em class="slot-state">Menunggu HP</em>
+          </div>
         </div>
         <p class="fine">HP dan PC harus di Wi-Fi yang sama · tanpa install aplikasi</p>
         <p class="fine" id="localhostNotice" style="display:none; color:#fde047; margin-top:5px; font-weight:700;">💡 <b>Desktop Localhost:</b> Buka game pakai IP LAN PC (contoh: 192.168.x.x) agar QR dapat diakses HP.</p>
@@ -133,6 +155,8 @@
       <div class="slot-list compact">
         <div class="slot-row" id="panelSlot1"><span class="slot-dot p1"></span><b>P1</b><em class="slot-state">Menunggu</em></div>
         <div class="slot-row" id="panelSlot2"><span class="slot-dot p2"></span><b>P2</b><em class="slot-state">Menunggu</em></div>
+        <div class="slot-row" id="panelSlot3"><span class="slot-dot p3"></span><b>P3</b><em class="slot-state">Menunggu</em></div>
+        <div class="slot-row" id="panelSlot4"><span class="slot-dot p4"></span><b>P4</b><em class="slot-state">Menunggu</em></div>
       </div>
     </aside>
 

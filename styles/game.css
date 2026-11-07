@@ -249,6 +249,8 @@ html.low-fx .title {
 }
 #chipP1 .chip-dot { background: var(--orange); box-shadow: 0 0 0 3px rgba(245, 158, 66, 0.18); }
 #chipP2 .chip-dot { background: var(--grey); box-shadow: 0 0 0 3px rgba(168, 179, 196, 0.18); }
+#chipP3 .chip-dot { background: #f1f5f9; box-shadow: 0 0 0 3px rgba(241, 245, 249, 0.18); }
+#chipP4 .chip-dot { background: #334155; box-shadow: 0 0 0 3px rgba(51, 65, 85, 0.18); }
 .player-chip .chip-state {
   color: rgba(255, 247, 230, 0.45);
   font-weight: 700;
